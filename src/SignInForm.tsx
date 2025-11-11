@@ -1,77 +1,34 @@
 "use client";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
-  const [submitting, setSubmitting] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  // Auto-sign in anonymously on mount
+  useEffect(() => {
+    if (!isSigningIn) {
+      setIsSigningIn(true);
+      signIn("anonymous").catch((error) => {
+        console.error("Failed to sign in anonymously:", error);
+        setIsSigningIn(false);
+      });
+    }
+  }, [signIn, isSigningIn]);
 
   return (
-    <div className="w-full">
-      <form
-        className="flex flex-col gap-form-field"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSubmitting(true);
-          const formData = new FormData(e.target as HTMLFormElement);
-          formData.set("flow", flow);
-          void signIn("password", formData).catch((error) => {
-            let toastTitle = "";
-            if (error.message.includes("Invalid password")) {
-              toastTitle = "Invalid password. Please try again.";
-            } else {
-              toastTitle =
-                flow === "signIn"
-                  ? "Could not sign in, did you mean to sign up?"
-                  : "Could not sign up, did you mean to sign in?";
-            }
-            toast.error(toastTitle);
-            setSubmitting(false);
-          });
-        }}
-      >
-        <input
-          className="auth-input-field"
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-        />
-        <input
-          className="auth-input-field"
-          type="password"
-          name="password"
-          placeholder="Password"
-          required
-        />
-        <button className="auth-button" type="submit" disabled={submitting}>
-          {flow === "signIn" ? "Sign in" : "Sign up"}
-        </button>
-        <div className="text-center text-sm text-secondary">
-          <span>
-            {flow === "signIn"
-              ? "Don't have an account? "
-              : "Already have an account? "}
-          </span>
-          <button
-            type="button"
-            className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
-            onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
-          >
-            {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
-          </button>
-        </div>
-      </form>
-      <div className="flex items-center justify-center my-3">
-        <hr className="my-4 grow border-gray-200" />
-        <span className="mx-4 text-secondary">or</span>
-        <hr className="my-4 grow border-gray-200" />
+    <div className="w-full flex flex-col items-center gap-4">
+      <div className="text-6xl animate-bounce">🎮</div>
+      <h2 className="text-2xl font-bold text-gray-700">Signing you in...</h2>
+      <div className="flex gap-2">
+        <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-pulse delay-75"></div>
+        <div className="w-3 h-3 bg-primary rounded-full animate-pulse delay-150"></div>
       </div>
-      <button className="auth-button" onClick={() => void signIn("anonymous")}>
-        Sign in anonymously
-      </button>
+      <p className="text-sm text-gray-500 mt-4">
+        No login required - just jump in and play!
+      </p>
     </div>
   );
 }
