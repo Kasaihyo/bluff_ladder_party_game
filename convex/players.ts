@@ -10,11 +10,12 @@ export const joinRoom = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
+    const userIdOrUndefined = userId ?? undefined;
 
     const existing = await ctx.db
       .query("players")
       .withIndex("by_room_and_user", (q) =>
-        q.eq("roomId", args.roomId).eq("userId", userId)
+        q.eq("roomId", args.roomId).eq("userId", userIdOrUndefined)
       )
       .first();
 
@@ -29,7 +30,7 @@ export const joinRoom = mutation({
 
     const playerId = await ctx.db.insert("players", {
       roomId: args.roomId,
-      userId: userId,
+      userId: userIdOrUndefined,
       name: args.name,
       emoji: args.emoji,
       ready: false,
