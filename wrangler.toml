@@ -1,0 +1,11 @@
+name = "bluff-ladder-party-game"
+compatibility_date = "2025-11-11"
+
+[site]
+bucket = "./dist"
+
+# Uncomment and configure if you need custom routing
+# [[routes]]
+# pattern = "/*"
+# zone_name = "your-domain.com"
+
