@@ -1,8 +1,5 @@
+// Convex Auth configuration
+// Anonymous and Password authentication don't require additional config here
 export default {
-  providers: [
-    {
-      domain: process.env.CONVEX_SITE_URL,
-      applicationID: "convex",
-    },
-  ],
+  providers: [],
 };
