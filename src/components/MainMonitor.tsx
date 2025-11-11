@@ -7,6 +7,7 @@ import { QuestionScreen } from "./QuestionScreen";
 import { StoryPhase } from "./StoryPhase";
 import { VotePhase } from "./VotePhase";
 import { RevealScreen } from "./RevealScreen";
+import { GameEnd } from "./GameEnd";
 
 export function MainMonitor() {
   const [roomId, setRoomId] = useState<Id<"rooms"> | null>(null);
@@ -16,9 +17,14 @@ export function MainMonitor() {
 
   useEffect(() => {
     const initRoom = async () => {
-      await seedQuestions();
-      const result = await createRoom();
-      setRoomId(result.roomId);
+      try {
+        await seedQuestions();
+        const result = await createRoom();
+        setRoomId(result.roomId);
+      } catch (error) {
+        console.error("Failed to initialize room:", error);
+        alert("Failed to create room. Please refresh the page.");
+      }
     };
     if (!roomId) {
       initRoom();
@@ -40,6 +46,7 @@ export function MainMonitor() {
       {room.state === "STORY" && <StoryPhase roomId={roomId} room={room} />}
       {room.state === "VOTE" && <VotePhase roomId={roomId} room={room} />}
       {room.state === "REVEAL" && <RevealScreen roomId={roomId} room={room} />}
+      {room.state === "GAME_END" && <GameEnd roomId={roomId} room={room} />}
     </div>
   );
 }

@@ -26,7 +26,9 @@ export function VotePhase({ roomId, room }: VotePhaseProps) {
 
   useEffect(() => {
     if (voteCount === judgeCount && judgeCount > 0) {
-      updateRoomState({ roomId, state: "REVEAL" });
+      updateRoomState({ roomId, state: "REVEAL" }).catch((error) => {
+        console.error("Failed to update room state:", error);
+      });
       return;
     }
 
@@ -34,7 +36,9 @@ export function VotePhase({ roomId, room }: VotePhaseProps) {
       setTimeLeft((prev: number) => {
         if (prev <= 1) {
           clearInterval(timer);
-          updateRoomState({ roomId, state: "REVEAL" });
+          updateRoomState({ roomId, state: "REVEAL" }).catch((error) => {
+            console.error("Failed to update room state:", error);
+          });
           return 0;
         }
         return prev - 1;

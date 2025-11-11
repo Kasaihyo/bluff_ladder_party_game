@@ -9,6 +9,19 @@ export const submitAnswer = mutation({
     choiceIndex: v.number(),
   },
   handler: async (ctx, args) => {
+    // Check if player already answered this question
+    const existingAnswer = await ctx.db
+      .query("answers")
+      .withIndex("by_room_and_question", (q) =>
+        q.eq("roomId", args.roomId).eq("questionId", args.questionId)
+      )
+      .filter((q) => q.eq(q.field("playerId"), args.playerId))
+      .first();
+
+    if (existingAnswer) {
+      throw new Error("You have already answered this question");
+    }
+
     const question = await ctx.db.get(args.questionId);
     if (!question) throw new Error("Question not found");
 
@@ -52,11 +65,31 @@ export const submitVote = mutation({
     vote: v.union(v.literal("believe"), v.literal("bullshit")),
   },
   handler: async (ctx, args) => {
+    // Check if judge already voted on this question
+    const existingVote = await ctx.db
+      .query("votes")
+      .withIndex("by_room_and_question", (q) =>
+        q.eq("roomId", args.roomId).eq("questionId", args.questionId)
+      )
+      .filter((q) => q.eq(q.field("judgeId"), args.judgeId))
+      .first();
+
+    if (existingVote) {
+      throw new Error("You have already voted on this question");
+    }
+
+    // Get the room to find the hot seat player
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+    if (!room.hotSeatPlayerId) throw new Error("No hot seat player set");
+
+    // Find the hot seat player's answer specifically
     const answer = await ctx.db
       .query("answers")
       .withIndex("by_room_and_question", (q) =>
         q.eq("roomId", args.roomId).eq("questionId", args.questionId)
       )
+      .filter((q) => q.eq(q.field("playerId"), room.hotSeatPlayerId))
       .first();
 
     if (!answer) throw new Error("No answer found for this question");
@@ -99,11 +132,17 @@ export const calculateRoundResult = query({
     questionId: v.id("questions"),
   },
   handler: async (ctx, args) => {
+    // Get the room to find the hot seat player
+    const room = await ctx.db.get(args.roomId);
+    if (!room || !room.hotSeatPlayerId) return null;
+
+    // Find the hot seat player's answer specifically
     const answer = await ctx.db
       .query("answers")
       .withIndex("by_room_and_question", (q) =>
         q.eq("roomId", args.roomId).eq("questionId", args.questionId)
       )
+      .filter((q) => q.eq(q.field("playerId"), room.hotSeatPlayerId))
       .first();
 
     if (!answer) return null;

@@ -37,14 +37,35 @@ export function PhoneController({ joinCode }: PhoneControllerProps) {
 
   const handleJoin = async () => {
     if (!name || !roomId) return;
-    const id = await joinRoom({ roomId, name, emoji });
-    setPlayerId(id);
+    try {
+      const id = await joinRoom({ roomId, name, emoji });
+      setPlayerId(id);
+    } catch (error) {
+      console.error("Failed to join room:", error);
+      alert("Failed to join room. Please try again.");
+    }
   };
 
   const handleToggleReady = async () => {
     if (!playerId) return;
-    await toggleReady({ playerId });
+    try {
+      await toggleReady({ playerId });
+    } catch (error) {
+      console.error("Failed to toggle ready:", error);
+      alert("Failed to update ready status. Please try again.");
+    }
   };
+
+  if (!joinCode) {
+    return (
+      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg text-center">
+        <h2 className="text-2xl font-bold mb-4">No Room Code</h2>
+        <p className="text-gray-600">
+          Please use a link with a room code to join a game, or scan the QR code from the main monitor.
+        </p>
+      </div>
+    );
+  }
 
   if (!room) {
     return (
@@ -101,6 +122,27 @@ export function PhoneController({ joinCode }: PhoneControllerProps) {
 
   if (!currentRoom || !player) {
     return <div>Loading...</div>;
+  }
+
+  // Show eliminated screen if player was eliminated
+  if (player.eliminated) {
+    const winnings = player.lastSafeHaven >= 0 
+      ? (currentRoom?.settings.ladder[player.lastSafeHaven] || 0)
+      : 0;
+    return (
+      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg text-center">
+        <div className="mb-6">
+          <div className="text-8xl mb-4">💀</div>
+          <h2 className="text-3xl font-bold text-red-600 mb-2">You've Been Eliminated!</h2>
+          <p className="text-xl text-gray-600">
+            You're taking home ${winnings.toLocaleString()}
+          </p>
+        </div>
+        <p className="text-gray-500">
+          Thanks for playing! Watch the main screen to see who wins.
+        </p>
+      </div>
+    );
   }
 
   if (currentRoom.state === "LOBBY") {
@@ -191,13 +233,18 @@ function HotSeatQuestion({
 
   const handleSubmit = async () => {
     if (selectedIndex === null) return;
-    const res = await submitAnswer({
-      roomId,
-      questionId: question._id,
-      playerId,
-      choiceIndex: selectedIndex,
-    });
-    setResult(res);
+    try {
+      const res = await submitAnswer({
+        roomId,
+        questionId: question._id,
+        playerId,
+        choiceIndex: selectedIndex,
+      });
+      setResult(res);
+    } catch (error) {
+      console.error("Failed to submit answer:", error);
+      alert("Failed to submit answer. Please try again.");
+    }
   };
 
   return (
@@ -277,13 +324,18 @@ function JudgeVote({
   }
 
   const handleVote = async (vote: "believe" | "bullshit") => {
-    await submitVote({
-      roomId,
-      questionId: question._id,
-      judgeId: playerId,
-      vote,
-    });
-    setVoted(true);
+    try {
+      await submitVote({
+        roomId,
+        questionId: question._id,
+        judgeId: playerId,
+        vote,
+      });
+      setVoted(true);
+    } catch (error) {
+      console.error("Failed to submit vote:", error);
+      alert("Failed to submit vote. Please try again.");
+    }
   };
 
   return (

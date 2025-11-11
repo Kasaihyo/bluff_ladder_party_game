@@ -14,7 +14,7 @@ export const joinRoom = mutation({
     const existing = await ctx.db
       .query("players")
       .withIndex("by_room_and_user", (q) =>
-        q.eq("roomId", args.roomId).eq("userId", userId ?? undefined)
+        q.eq("roomId", args.roomId).eq("userId", userId)
       )
       .first();
 
@@ -29,13 +29,13 @@ export const joinRoom = mutation({
 
     const playerId = await ctx.db.insert("players", {
       roomId: args.roomId,
-      userId: userId ?? undefined,
+      userId: userId,
       name: args.name,
       emoji: args.emoji,
       ready: false,
       connected: true,
-      currentRung: 0,
-      lastSafeHaven: 0,
+      currentRung: -1, // Start before the first rung
+      lastSafeHaven: -1, // No safe haven reached yet = $0
       correctReads: 0,
       totalVotes: 0,
       eliminated: false,
@@ -82,6 +82,10 @@ export const updatePlayerRung = mutation({
     isSafeHaven: v.boolean(),
   },
   handler: async (ctx, args) => {
+    if (args.newRung < 0) {
+      throw new Error("Invalid rung value");
+    }
+
     const updates: any = { currentRung: args.newRung };
     if (args.isSafeHaven) {
       updates.lastSafeHaven = args.newRung;

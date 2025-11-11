@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type RevealScreenProps = {
   roomId: Id<"rooms">;
@@ -31,51 +31,68 @@ export function RevealScreen({ roomId, room }: RevealScreenProps) {
   const setHotSeat = useMutation(api.rooms.setHotSeat);
   const setCurrentQuestion = useMutation(api.rooms.setCurrentQuestion);
   const getRandomQuestion = useQuery(api.questions.getRandomQuestion, {});
+  const processedRef = useRef(false);
 
   useEffect(() => {
     const processResult = async () => {
       if (!result || !hotSeatPlayer || !players || !getRandomQuestion) return;
+      
+      // Prevent double processing
+      if (processedRef.current) return;
+      processedRef.current = true;
 
-      for (const vote of result.votes) {
-        await updateJudgeStats({
-          playerId: vote.judgeId,
-          correctRead: vote.correctRead,
-        });
-      }
-
-      if (result.shouldEliminate) {
-        await eliminatePlayer({ playerId: hotSeatPlayer._id });
-      } else if (result.shouldAdvance) {
-        const newRung = hotSeatPlayer.currentRung + 1;
-        const isSafeHaven = room.settings.safeHavens.includes(newRung);
-        await updatePlayerRung({
-          playerId: hotSeatPlayer._id,
-          newRung,
-          isSafeHaven,
-        });
-      }
-
-      setTimeout(async () => {
-        const activePlayers = players.filter((p) => !p.eliminated);
-        if (activePlayers.length === 0) {
-          await updateRoomState({ roomId, state: "GAME_END" });
-          return;
+      try {
+        for (const vote of result.votes) {
+          await updateJudgeStats({
+            playerId: vote.judgeId,
+            correctRead: vote.correctRead,
+          });
         }
 
-        const nextHotSeat = activePlayers.reduce((best, p) => {
-          const bestAccuracy = best.totalVotes > 0 ? best.correctReads / best.totalVotes : 0;
-          const pAccuracy = p.totalVotes > 0 ? p.correctReads / p.totalVotes : 0;
-          return pAccuracy > bestAccuracy ? p : best;
-        });
+        if (result.shouldEliminate) {
+          await eliminatePlayer({ playerId: hotSeatPlayer._id });
+        } else if (result.shouldAdvance) {
+          const newRung = hotSeatPlayer.currentRung + 1;
+          const isSafeHaven = room.settings.safeHavens.includes(newRung);
+          await updatePlayerRung({
+            playerId: hotSeatPlayer._id,
+            newRung,
+            isSafeHaven,
+          });
+        }
 
-        await setHotSeat({ roomId, playerId: nextHotSeat._id });
-        await setCurrentQuestion({ roomId, questionId: getRandomQuestion._id });
-        await updateRoomState({ roomId, state: "QUESTION" });
-      }, 5000);
+        const timeoutId = setTimeout(async () => {
+          try {
+            const activePlayers = players.filter((p) => !p.eliminated);
+            if (activePlayers.length === 0) {
+              await updateRoomState({ roomId, state: "GAME_END" });
+              return;
+            }
+
+            const nextHotSeat = activePlayers.reduce((best, p) => {
+              const bestAccuracy = best.totalVotes > 0 ? best.correctReads / best.totalVotes : 0;
+              const pAccuracy = p.totalVotes > 0 ? p.correctReads / p.totalVotes : 0;
+              return pAccuracy > bestAccuracy ? p : best;
+            });
+
+            await setHotSeat({ roomId, playerId: nextHotSeat._id });
+            await setCurrentQuestion({ roomId, questionId: getRandomQuestion._id });
+            await updateRoomState({ roomId, state: "QUESTION" });
+          } catch (error) {
+            console.error("Failed to advance to next round:", error);
+          }
+        }, 5000);
+
+        // Cleanup timeout on unmount
+        return () => clearTimeout(timeoutId);
+      } catch (error) {
+        console.error("Failed to process round result:", error);
+        processedRef.current = false; // Allow retry on error
+      }
     };
 
     processResult();
-  }, []);
+  }, [result, hotSeatPlayer, players, getRandomQuestion, roomId, updateJudgeStats, eliminatePlayer, updatePlayerRung, room.settings.safeHavens, updateRoomState, setHotSeat, setCurrentQuestion]);
 
   if (!question || !result || !hotSeatPlayer) {
     return <div>Loading...</div>;
@@ -156,7 +173,9 @@ export function RevealScreen({ roomId, room }: RevealScreenProps) {
           <div className="p-6 bg-green-100 rounded-lg">
             <p className="text-3xl font-bold text-green-700 mb-2">ADVANCE! 🎉</p>
             <p className="text-lg">
-              Moving to ${room.settings.ladder[hotSeatPlayer.currentRung + 1]?.toLocaleString() || "???"}
+              {hotSeatPlayer.currentRung + 1 < room.settings.ladder.length 
+                ? `Moving to $${room.settings.ladder[hotSeatPlayer.currentRung + 1].toLocaleString()}`
+                : "Reached the top!"}
             </p>
           </div>
         ) : (

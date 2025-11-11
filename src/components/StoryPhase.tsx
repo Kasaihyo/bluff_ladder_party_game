@@ -16,21 +16,26 @@ export function StoryPhase({ roomId, room }: StoryPhaseProps) {
   const updateRoomState = useMutation(api.rooms.updateRoomState);
 
   const [timeLeft, setTimeLeft] = useState(room.settings.storyTime);
+  const [hasTransitioned, setHasTransitioned] = useState(false);
 
   useEffect(() => {
+    if (hasTransitioned) return;
+
     const timer = setInterval(() => {
       setTimeLeft((prev: number) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          updateRoomState({ roomId, state: "VOTE" });
+        if (prev <= 1 && !hasTransitioned) {
+          setHasTransitioned(true);
+          updateRoomState({ roomId, state: "VOTE" }).catch((error: unknown) => {
+            console.error("Failed to update room state:", error);
+          });
           return 0;
         }
-        return prev - 1;
+        return prev > 0 ? prev - 1 : 0;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [roomId, updateRoomState]);
+  }, [roomId, updateRoomState, hasTransitioned]);
 
   if (!hotSeatPlayer) {
     return <div>Loading...</div>;

@@ -29,19 +29,37 @@ export function Lobby({ roomId, room }: LobbyProps) {
   const canStart = (players?.length || 0) >= 1 && readyCount === players?.length;
 
   const handleStartGame = async () => {
-    if (!canStart || !players || !getRandomQuestion) return;
+    if (!canStart || !players) return;
+    
+    if (!getRandomQuestion) {
+      alert("No questions available! Please upload questions first.");
+      return;
+    }
 
-    const randomPlayer = players[Math.floor(Math.random() * players.length)];
-    await setHotSeat({ roomId, playerId: randomPlayer._id });
-    await setCurrentQuestion({ roomId, questionId: getRandomQuestion._id });
-    await updateRoomState({ roomId, state: "QUESTION" });
+    try {
+      const randomPlayer = players[Math.floor(Math.random() * players.length)];
+      await setHotSeat({ roomId, playerId: randomPlayer._id });
+      await setCurrentQuestion({ roomId, questionId: getRandomQuestion._id });
+      await updateRoomState({ roomId, state: "QUESTION" });
+    } catch (error: unknown) {
+      console.error("Failed to start game:", error);
+      alert("Failed to start game. Please try again.");
+    }
   };
 
   const handleSetHotSeat = async (playerId: Id<"players">) => {
-    if (!getRandomQuestion) return;
-    await setHotSeat({ roomId, playerId });
-    await setCurrentQuestion({ roomId, questionId: getRandomQuestion._id });
-    await updateRoomState({ roomId, state: "QUESTION" });
+    if (!getRandomQuestion) {
+      alert("No questions available! Please upload questions first.");
+      return;
+    }
+    try {
+      await setHotSeat({ roomId, playerId });
+      await setCurrentQuestion({ roomId, questionId: getRandomQuestion._id });
+      await updateRoomState({ roomId, state: "QUESTION" });
+    } catch (error: unknown) {
+      console.error("Failed to set hot seat:", error);
+      alert("Failed to set hot seat. Please try again.");
+    }
   };
 
   const handleRemovePlayer = async (playerId: Id<"players">) => {

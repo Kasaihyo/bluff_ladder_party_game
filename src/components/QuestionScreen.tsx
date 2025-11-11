@@ -33,7 +33,9 @@ export function QuestionScreen({ roomId, room }: QuestionScreenProps) {
 
   useEffect(() => {
     if (answer) {
-      updateRoomState({ roomId, state: "STORY" });
+      updateRoomState({ roomId, state: "STORY" }).catch((error) => {
+        console.error("Failed to update room state:", error);
+      });
       return;
     }
 
@@ -41,7 +43,9 @@ export function QuestionScreen({ roomId, room }: QuestionScreenProps) {
       setTimeLeft((prev: number) => {
         if (prev <= 1) {
           clearInterval(timer);
-          updateRoomState({ roomId, state: "STORY" });
+          updateRoomState({ roomId, state: "STORY" }).catch((error) => {
+            console.error("Failed to update room state:", error);
+          });
           return 0;
         }
         return prev - 1;
