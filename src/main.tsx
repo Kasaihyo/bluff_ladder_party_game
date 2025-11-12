@@ -15,6 +15,17 @@ if (!CONVEX_URL) {
   );
 }
 
+// CRITICAL FIX: Clear ALL Convex auth tokens before initializing client
+// This prevents "No auth provider found matching the given token" errors
+// from old/invalid tokens that were created with a different auth config
+console.log('🧹 Clearing all Convex auth tokens...');
+Object.keys(localStorage).forEach(key => {
+  if (key.startsWith('__convexAuth')) {
+    console.log('🧹 Removed:', key);
+    localStorage.removeItem(key);
+  }
+});
+
 const convex = new ConvexReactClient(CONVEX_URL);
 
 createRoot(document.getElementById("root")!).render(
