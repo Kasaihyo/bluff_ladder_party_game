@@ -1,27 +1,31 @@
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading, useConvexAuth } from "convex/react";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { MainMonitor } from "./components/MainMonitor";
 import { PhoneController } from "./components/PhoneController";
 import { useState, useEffect } from "react";
-import { api } from "../convex/_generated/api";
 
 export default function App() {
   const [view, setView] = useState<"main" | "phone">("main");
   const urlParams = new URLSearchParams(window.location.search);
   const joinCode = urlParams.get("code");
   
-  // Debug: Check auth state
-  const user = useQuery(api.auth.loggedInUser);
+  // Debug: Check actual Convex auth state
+  const { isAuthenticated, isLoading } = useConvexAuth();
   
   useEffect(() => {
-    console.log('🔍 Auth Debug - User state:', user);
-  }, [user]);
+    console.log('🔍 Convex Auth State:', { isAuthenticated, isLoading });
+  }, [isAuthenticated, isLoading]);
 
   if (joinCode) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
+        <AuthLoading>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-2xl">Loading...</div>
+          </div>
+        </AuthLoading>
         <Authenticated>
           <PhoneController joinCode={joinCode} />
         </Authenticated>
@@ -71,6 +75,9 @@ export default function App() {
         </div>
       </header>
       <main className="flex-1 flex items-center justify-center p-8">
+        <AuthLoading>
+          <div className="text-2xl">Loading authentication...</div>
+        </AuthLoading>
         <Authenticated>
           {view === "main" ? <MainMonitor /> : <PhoneController />}
         </Authenticated>
