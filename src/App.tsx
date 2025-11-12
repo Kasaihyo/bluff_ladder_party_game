@@ -1,15 +1,23 @@
-import { Authenticated, Unauthenticated } from "convex/react";
+import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { MainMonitor } from "./components/MainMonitor";
 import { PhoneController } from "./components/PhoneController";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../convex/_generated/api";
 
 export default function App() {
   const [view, setView] = useState<"main" | "phone">("main");
   const urlParams = new URLSearchParams(window.location.search);
   const joinCode = urlParams.get("code");
+  
+  // Debug: Check auth state
+  const user = useQuery(api.auth.loggedInUser);
+  
+  useEffect(() => {
+    console.log('🔍 Auth Debug - User state:', user);
+  }, [user]);
 
   if (joinCode) {
     return (

@@ -15,16 +15,6 @@ if (!CONVEX_URL) {
   );
 }
 
-// Clear any old auth tokens from localStorage before initializing Convex client
-// This prevents "No auth provider found matching the given token" errors from old sessions
-console.log('🧹 Checking for old auth tokens to clear...');
-Object.keys(localStorage).forEach(key => {
-  if (key.startsWith('__convexAuth')) {
-    console.log('🧹 Clearing old auth token:', key);
-    localStorage.removeItem(key);
-  }
-});
-
 const convex = new ConvexReactClient(CONVEX_URL);
 
 createRoot(document.getElementById("root")!).render(
