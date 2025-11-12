@@ -3,19 +3,28 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useEffect, useState } from "react";
 
 export function SignInForm() {
-  const { signIn } = useAuthActions();
+  const { signIn, signOut } = useAuthActions();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Auto-sign in anonymously on mount
+  // Force sign-out first, then sign in fresh
   useEffect(() => {
     if (!isSigningIn) {
       setIsSigningIn(true);
-      signIn("anonymous").catch((error) => {
-        console.error("Failed to sign in anonymously:", error);
-        setIsSigningIn(false);
-      });
+      
+      // Sign out first to clear any old tokens
+      signOut()
+        .catch(() => {
+          // Ignore sign-out errors (might not be signed in)
+        })
+        .finally(() => {
+          // Then sign in anonymously with fresh token
+          signIn("anonymous").catch((error) => {
+            console.error("Failed to sign in anonymously:", error);
+            setIsSigningIn(false);
+          });
+        });
     }
-  }, [signIn, isSigningIn]);
+  }, [signIn, signOut, isSigningIn]);
 
   return (
     <div className="w-full flex flex-col items-center gap-4">
