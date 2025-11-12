@@ -4,16 +4,7 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [
-    Anonymous({
-      profile() {
-        // Return user profile data for anonymous users
-        return {
-          isAnonymous: true,
-        };
-      },
-    }),
-  ],
+  providers: [Anonymous],
 });
 
 export const loggedInUser = query({
